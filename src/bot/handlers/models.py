@@ -109,7 +109,6 @@ async def add_model_provider(
         count, catalog_available, selected_alias = await service.add_provider(
             provider_name, base_url, model_id, api_key
         )
-        settings = context.bot_data["settings"]
         selected = await service.select_model(selected_alias)
         active_model = selected.model_id if selected else model_id
         # The requested model is the initial active model; other discovered
@@ -140,7 +139,8 @@ async def add_model_provider(
 async def show_models(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Show the provider/model picker, similar to Hermes /model."""
     message = update.effective_message
-    if message is None:
+    chat = update.effective_chat
+    if message is None or chat is None:
         return
     service = _service(context)
     if service is None:
