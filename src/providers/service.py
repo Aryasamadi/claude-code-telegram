@@ -21,7 +21,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import yaml
 
 from src.config.settings import Settings
 
@@ -192,8 +191,10 @@ class ProviderService:
             "general_settings": {"master_key": "os.environ/LITELLM_MASTER_KEY"},
         }
         temporary_path = self._config_path.with_suffix(".yaml.tmp")
+        # JSON is a valid YAML subset, so LiteLLM can load this without adding
+        # another direct dependency to the bot project.
         temporary_path.write_text(
-            yaml.safe_dump(payload, sort_keys=False, allow_unicode=True),
+            json.dumps(payload, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
         os.chmod(temporary_path, 0o600)
