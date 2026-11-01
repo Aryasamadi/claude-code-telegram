@@ -54,6 +54,7 @@ def test_registration_logging_does_not_mask_original_error(
 
     original_error = RuntimeError("controlled failure: secret-api-key")
     if failure_stage == "write_config":
+
         def fail_write_config() -> None:
             raise original_error
 
