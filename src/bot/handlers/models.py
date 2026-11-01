@@ -121,29 +121,45 @@ async def add_model_provider(
         )
         selected = await service.select_model(selected_alias)
         active_model = selected.model_id if selected else model_id
-        # The requested model is the initial active model; other discovered
-        # models remain available from /model and /models.
-        status = "Provider registered and proxy is ready."
-        if not catalog_available:
-            status += (
-                "\nThe provider's /models endpoint was unavailable; "
-                "only the model from your command was added."
-            )
+    except Exception as exc:
+        # The API key is removed from the source message and redacted again
+        # before logging, because upstream exceptions can echo request headers.
+        safe_error = str(exc)
+        if api_key:
+            safe_error = safe_error.replace(api_key, "[REDACTED]")
+        logger.error(
+            "Telegram provider registration failed",
+            provider_name=provider_name,
+            base_url=base_url,
+            model_id=model_id,
+            error_type=type(exc).__name__,
+            error=safe_error[:1000],
+        )
         await chat.send_message(
-            f"✅ <b>{html.escape(provider_name)}</b> added.\n"
-            f"Models found: <b>{count}</b>\n"
-            f"Active model: <code>{html.escape(active_model)}</code>"
-            "\n\n"
-            f"{status}\nUse /model to switch models or /models to browse them.",
+            "❌ Could not add this provider. "
+            f"Diagnostic: <code>{html.escape(type(exc).__name__)}</code>. "
+            "The detailed, redacted cause is in the GitHub Actions log. "
+            "Check the latest Run Telegram Bot execution.",
             parse_mode="HTML",
         )
-    except Exception:
-        # Do not echo upstream exceptions: some clients include sensitive
-        # request metadata or provider details in their exception messages.
-        await chat.send_message(
-            "❌ Could not add this provider. Check the HTTPS base URL, API key, "
-            "model ID, and provider OpenAI-compatible API support."
+        return
+
+    # The requested model is the initial active model; other discovered
+    # models remain available from /model and /models.
+    status = "Provider registered and proxy is ready."
+    if not catalog_available:
+        status += (
+            "\nThe provider's /models endpoint was unavailable; "
+            "only the model from your command was added."
         )
+    await chat.send_message(
+        f"✅ <b>{html.escape(provider_name)}</b> added.\n"
+        f"Models found: <b>{count}</b>\n"
+        f"Active model: <code>{html.escape(active_model)}</code>"
+        "\n\n"
+        f"{status}\nUse /model to switch models or /models to browse them.",
+        parse_mode="HTML",
+    )
 
 
 async def show_models(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
