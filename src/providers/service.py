@@ -255,7 +255,9 @@ class ProviderService:
     def _log_startup_failure(self) -> None:
         """Copy a redacted proxy startup tail into the GitHub Actions log."""
         try:
-            lines = self._log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+            lines = self._log_path.read_text(
+                encoding="utf-8", errors="replace"
+            ).splitlines()
         except OSError:
             logger.exception("Could not read LiteLLM startup log")
             return
