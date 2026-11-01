@@ -1,4 +1,5 @@
 """Telegram commands for registering and selecting custom model providers."""
+
 from __future__ import annotations
 
 import html
@@ -51,9 +52,7 @@ def _page_markup(
             InlineKeyboardButton("‹ Previous", callback_data=f"mdl:p:{page - 1}")
         )
     if page + 1 < total_pages:
-        nav.append(
-            InlineKeyboardButton("Next ›", callback_data=f"mdl:p:{page + 1}")
-        )
+        nav.append(InlineKeyboardButton("Next ›", callback_data=f"mdl:p:{page + 1}"))
     if nav:
         keyboard.append(nav)
     return "\n".join(lines), InlineKeyboardMarkup(keyboard)
@@ -160,7 +159,7 @@ async def show_models(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     models = await service.list_models()
     if not models:
         await chat.send_message(
-            'No providers added yet.\nAdd one with:\n'
+            "No providers added yet.\nAdd one with:\n"
             '<code>/addmodel "Provider Name" "https://host/v1"\n'
             '"model-id" "API_KEY"</code>',
             parse_mode="HTML",
