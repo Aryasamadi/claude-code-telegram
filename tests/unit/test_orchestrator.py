@@ -166,7 +166,15 @@ async def test_agentic_bot_commands(agentic_settings, deps):
     assert len(commands) == 9
     cmd_names = [c.command for c in commands]
     assert cmd_names == [
-        "start", "new", "status", "verbose", "repo", "restart", "addmodel", "models", "model"
+        "start",
+        "new",
+        "status",
+        "verbose",
+        "repo",
+        "restart",
+        "addmodel",
+        "models",
+        "model",
     ]
 
 
