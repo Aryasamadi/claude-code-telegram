@@ -104,19 +104,11 @@ async def add_model_provider(
 
     _, provider_name, base_url, model_id, api_key = parts
     try:
-        count, catalog_available = await service.add_provider(
+        count, catalog_available, selected_alias = await service.add_provider(
             provider_name, base_url, model_id, api_key
         )
         settings = context.bot_data["settings"]
-        selected = await service.select_model(
-            next(
-                route.alias
-                for route in await service.list_models()
-                if route.provider_name == provider_name
-                and route.model_id == model_id
-                and route.base_url.rstrip("/") == base_url.rstrip("/")
-            )
-        )
+        selected = await service.select_model(selected_alias)
         # The requested model is the initial active model; other discovered
         # models remain available from /model and /models.
         status = "Provider registered and proxy is ready."
