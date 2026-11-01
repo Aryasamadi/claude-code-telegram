@@ -16,6 +16,7 @@ import re
 import secrets
 import shutil
 import subprocess
+import tempfile
 import time
 import urllib.parse
 import urllib.request
@@ -111,9 +112,27 @@ class ProviderService:
         return normalized
 
     @staticmethod
+    def _openai_api_base(base_url: str) -> str:
+        base = base_url.rstrip("/")
+        if not urllib.parse.urlsplit(base).path.rstrip("/").endswith("/v1"):
+            base += "/v1"
+        return base
+
+    @staticmethod
+    def _proxy_child_environment() -> dict[str, str]:
+        """Keep the bot database configuration out of the LiteLLM child."""
+        env = os.environ.copy()
+        env.pop("DATABASE_URL", None)
+        env.pop("LITELLM_DATABASE_URL", None)
+        env["PYTHON_DOTENV_DISABLED"] = "1"
+        env["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
+        return env
+
+    @staticmethod
     def _fetch_model_ids(base_url: str, api_key: str) -> list[str]:
+        models_base = ProviderService._openai_api_base(base_url)
         request = urllib.request.Request(
-            f"{base_url}/models",
+            f"{models_base}/models",
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Accept": "application/json",
@@ -230,8 +249,8 @@ class ProviderService:
                 {
                     "model_name": route.alias,
                     "litellm_params": {
-                        "model": f"openai/{route.model_id}",
-                        "api_base": route.base_url,
+                        "model": f"custom_openai/{route.model_id}",
+                        "api_base": self._openai_api_base(route.base_url),
                         "api_key": f"os.environ/{route.key_env}",
                         "drop_params": True,
                     },
@@ -288,7 +307,8 @@ class ProviderService:
                 stdin=subprocess.DEVNULL,
                 stdout=self._log_handle,
                 stderr=subprocess.STDOUT,
-                env=os.environ.copy(),
+                env=self._proxy_child_environment(),
+                cwd=str(Path(tempfile.gettempdir())),
             )
         except Exception as exc:
             logger.error(
