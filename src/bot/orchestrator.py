@@ -328,7 +328,7 @@ class MessageOrchestrator:
 
     def _register_agentic_handlers(self, app: Application) -> None:
         """Register agentic handlers: commands + text/file/photo."""
-        from .handlers import command
+        from .handlers import command, models as model_commands
 
         # Commands
         handlers = [
@@ -338,6 +338,9 @@ class MessageOrchestrator:
             ("verbose", self.agentic_verbose),
             ("repo", self.agentic_repo),
             ("restart", command.restart_command),
+            ("addmodel", model_commands.add_model_provider),
+            ("models", model_commands.show_models),
+            ("model", model_commands.show_models),
         ]
         if self.settings.enable_project_threads:
             handlers.append(("sync_threads", command.sync_threads))
@@ -390,6 +393,14 @@ class MessageOrchestrator:
             group=10,
         )
 
+        # Custom provider/model picker callbacks.
+        app.add_handler(
+            CallbackQueryHandler(
+                self._inject_deps(model_commands.model_picker_callback),
+                pattern=r"^mdl:",
+            )
+        )
+
         # Stop button callback (must be before cd: handler)
         app.add_handler(
             CallbackQueryHandler(
@@ -418,7 +429,7 @@ class MessageOrchestrator:
 
     def _register_classic_handlers(self, app: Application) -> None:
         """Register full classic handler set (moved from core.py)."""
-        from .handlers import callback, command, message
+        from .handlers import callback, command, message, models as model_commands
 
         handlers = [
             ("start", command.start_command),
@@ -435,6 +446,9 @@ class MessageOrchestrator:
             ("actions", command.quick_actions),
             ("git", command.git_command),
             ("restart", command.restart_command),
+            ("addmodel", model_commands.add_model_provider),
+            ("models", model_commands.show_models),
+            ("model", model_commands.show_models),
         ]
         if self.settings.enable_project_threads:
             handlers.append(("sync_threads", command.sync_threads))
@@ -464,6 +478,12 @@ class MessageOrchestrator:
             group=10,
         )
         app.add_handler(
+            CallbackQueryHandler(
+                self._inject_deps(model_commands.model_picker_callback),
+                pattern=r"^mdl:",
+            )
+        )
+        app.add_handler(
             CallbackQueryHandler(self._inject_deps(callback.handle_callback_query))
         )
 
@@ -479,6 +499,9 @@ class MessageOrchestrator:
                 BotCommand("verbose", "Set output verbosity (0/1/2)"),
                 BotCommand("repo", "List repos / switch workspace"),
                 BotCommand("restart", "Restart the bot"),
+                BotCommand("addmodel", "Add a custom API provider"),
+                BotCommand("models", "Browse available models"),
+                BotCommand("model", "Choose the active model"),
             ]
             if self.settings.enable_project_threads:
                 commands.append(BotCommand("sync_threads", "Sync project topics"))
@@ -499,6 +522,9 @@ class MessageOrchestrator:
                 BotCommand("actions", "Show quick actions"),
                 BotCommand("git", "Git repository commands"),
                 BotCommand("restart", "Restart the bot"),
+                BotCommand("addmodel", "Add a custom API provider"),
+                BotCommand("models", "Browse available models"),
+                BotCommand("model", "Choose the active model"),
             ]
             if self.settings.enable_project_threads:
                 commands.append(BotCommand("sync_threads", "Sync project topics"))
