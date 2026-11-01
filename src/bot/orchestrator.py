@@ -328,7 +328,8 @@ class MessageOrchestrator:
 
     def _register_agentic_handlers(self, app: Application) -> None:
         """Register agentic handlers: commands + text/file/photo."""
-        from .handlers import command, models as model_commands
+        from .handlers import command
+        from .handlers import models as model_commands
 
         # Commands
         handlers = [
@@ -429,7 +430,8 @@ class MessageOrchestrator:
 
     def _register_classic_handlers(self, app: Application) -> None:
         """Register full classic handler set (moved from core.py)."""
-        from .handlers import callback, command, message, models as model_commands
+        from .handlers import callback, command, message
+        from .handlers import models as model_commands
 
         handlers = [
             ("start", command.start_command),
