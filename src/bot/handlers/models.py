@@ -77,6 +77,16 @@ async def add_model_provider(
     except Exception:
         deleted = False
 
+    if getattr(chat, "type", "") != "private":
+        warning = (
+            "Use /addmodel only in a private chat with the bot. "
+            "Never send provider API keys in a group."
+        )
+        if not deleted:
+            warning += " I could not delete the command; remove it manually now."
+        await chat.send_message(warning)
+        return
+
     try:
         parts = shlex.split(raw_text)
     except ValueError:
