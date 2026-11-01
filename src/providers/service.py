@@ -8,8 +8,8 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import ipaddress
-import logging
 import json
+import logging
 import os
 import re
 import secrets
@@ -21,7 +21,6 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-
 
 from src.config.settings import Settings
 
