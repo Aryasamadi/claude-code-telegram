@@ -3,6 +3,7 @@
 Provider credentials are held in process memory/environment only. The generated
 LiteLLM config contains environment-variable references, never raw API keys.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -143,9 +144,11 @@ class ProviderService:
         if not model_ids:
             raise ValueError("The provider returned no model IDs.")
 
-        provider_identity = hashlib.sha256(
-            f"{provider_name}|{normalized_url}".encode("utf-8")
-        ).hexdigest()[:12].upper()
+        provider_identity = (
+            hashlib.sha256(f"{provider_name}|{normalized_url}".encode("utf-8"))
+            .hexdigest()[:12]
+            .upper()
+        )
         key_env = f"TG_PROVIDER_{provider_identity}_API_KEY"
         os.environ[key_env] = api_key
 
