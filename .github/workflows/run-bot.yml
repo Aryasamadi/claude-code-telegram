@@ -22,10 +22,6 @@ jobs:
     env:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       ALLOWED_USERS: ${{ secrets.ALLOWED_USERS }}
-      # Configure either CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY.
-      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-
       # Required application settings. The bot username is resolved from Telegram below.
       APPROVED_DIRECTORY: ${{ github.workspace }}
       DATABASE_URL: sqlite:///data/bot.db
@@ -38,6 +34,9 @@ jobs:
     steps:
       - name: Check required secrets
         shell: bash
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN_SECRET: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY_SECRET: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           set -euo pipefail
 
@@ -51,7 +50,7 @@ jobs:
             exit 1
           fi
 
-          if [[ -z "${ANTHROPIC_API_KEY}" && -z "${CLAUDE_CODE_OAUTH_TOKEN}" ]]; then
+          if [[ -z "${ANTHROPIC_API_KEY_SECRET}" && -z "${CLAUDE_CODE_OAUTH_TOKEN_SECRET}" ]]; then
             echo "::error::Add either CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY. A fresh GitHub runner has no saved Claude login."
             exit 1
           fi
@@ -66,6 +65,21 @@ jobs:
           except ValueError as exc:
               raise SystemExit("ALLOWED_USERS must contain numeric Telegram user IDs separated by commas.") from exc
           PY
+
+      - name: Configure Claude authentication
+        shell: bash
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN_SECRET: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY_SECRET: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${CLAUDE_CODE_OAUTH_TOKEN_SECRET}" ]]; then
+            printf 'CLAUDE_CODE_OAUTH_TOKEN=%s\\n' "$CLAUDE_CODE_OAUTH_TOKEN_SECRET" >> "$GITHUB_ENV"
+            echo "Claude Code OAuth authentication configured."
+          elif [[ -n "${ANTHROPIC_API_KEY_SECRET}" ]]; then
+            printf 'ANTHROPIC_API_KEY=%s\\n' "$ANTHROPIC_API_KEY_SECRET" >> "$GITHUB_ENV"
+            echo "Anthropic API key authentication configured."
+          fi
 
       - name: Check out repository
         uses: actions/checkout@v6
