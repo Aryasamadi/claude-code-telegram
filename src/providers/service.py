@@ -49,7 +49,11 @@ class ProviderService:
         self._lock = asyncio.Lock()
         self._process: subprocess.Popen[Any] | None = None
         self._log_handle: Any = None
-        data_dir = settings.database_path.parent if settings.database_path else Path.cwd() / "data"
+        data_dir = (
+            settings.database_path.parent
+            if settings.database_path
+            else Path.cwd() / "data"
+        )
         data_dir.mkdir(parents=True, exist_ok=True)
         self._config_path = data_dir / "litellm-providers.yaml"
         self._log_path = data_dir / "litellm-proxy.log"
@@ -69,10 +73,14 @@ class ProviderService:
             or parsed.query
             or parsed.fragment
         ):
-            raise ValueError("Base URL must be a public HTTPS OpenAI-compatible API URL.")
+            raise ValueError(
+                "Base URL must be a public HTTPS OpenAI-compatible API URL."
+            )
         host = parsed.hostname.lower()
         if host in {"localhost", "localhost.localdomain"} or host.endswith(".local"):
-            raise ValueError("Local/private provider URLs cannot be reached safely from this runner.")
+            raise ValueError(
+                "Local/private provider URLs cannot be reached safely from this runner."
+            )
         try:
             address = ipaddress.ip_address(host)
         except ValueError:
@@ -143,7 +151,6 @@ class ProviderService:
         slug = self._slug(provider_name)
         selected_alias = ""
         async with self._lock:
-            added = 0
             for item_id in model_ids:
                 digest = hashlib.sha256(
                     f"{provider_name}|{normalized_url}|{item_id}".encode("utf-8")
@@ -157,7 +164,6 @@ class ProviderService:
                         base_url=normalized_url,
                         key_env=key_env,
                     )
-                    added += 1
                 if item_id == model_id:
                     selected_alias = alias
             self._provider_keys[key_env] = api_key
@@ -196,7 +202,9 @@ class ProviderService:
     def _restart_proxy(self) -> None:
         executable = shutil.which("litellm")
         if not executable:
-            raise RuntimeError("LiteLLM is missing. Install the LiteLLM proxy dependency.")
+            raise RuntimeError(
+                "LiteLLM is missing. Install the LiteLLM proxy dependency."
+            )
         if self._process and self._process.poll() is None:
             self._process.terminate()
             try:
@@ -225,7 +233,8 @@ class ProviderService:
         for _ in range(45):
             if self._process.poll() is not None:
                 raise RuntimeError(
-                    "LiteLLM failed to start. Check the Actions log for the proxy startup error."
+                    "LiteLLM failed to start. Check the Actions log for the "
+                    "proxy startup error."
                 )
             try:
                 request = urllib.request.Request(
@@ -240,7 +249,10 @@ class ProviderService:
     async def list_models(self) -> list[ModelRoute]:
         return sorted(
             self._models.values(),
-            key=lambda route: (route.provider_name.casefold(), route.model_id.casefold()),
+            key=lambda route: (
+                route.provider_name.casefold(),
+                route.model_id.casefold(),
+            ),
         )
 
     async def select_model(self, alias: str) -> ModelRoute | None:
