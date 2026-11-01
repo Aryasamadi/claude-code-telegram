@@ -74,10 +74,10 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -n "${CLAUDE_CODE_OAUTH_TOKEN_SECRET}" ]]; then
-            printf 'CLAUDE_CODE_OAUTH_TOKEN=%s\\n' "$CLAUDE_CODE_OAUTH_TOKEN_SECRET" >> "$GITHUB_ENV"
+            printf 'CLAUDE_CODE_OAUTH_TOKEN=%s\n' "$CLAUDE_CODE_OAUTH_TOKEN_SECRET" >> "$GITHUB_ENV"
             echo "Claude Code OAuth authentication configured."
           elif [[ -n "${ANTHROPIC_API_KEY_SECRET}" ]]; then
-            printf 'ANTHROPIC_API_KEY=%s\\n' "$ANTHROPIC_API_KEY_SECRET" >> "$GITHUB_ENV"
+            printf 'ANTHROPIC_API_KEY=%s\n' "$ANTHROPIC_API_KEY_SECRET" >> "$GITHUB_ENV"
             echo "Anthropic API key authentication configured."
           fi
 
