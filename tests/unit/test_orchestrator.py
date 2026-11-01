@@ -113,7 +113,7 @@ def test_agentic_registers_9_commands(agentic_settings, deps):
 
 
 def test_classic_registers_17_commands(classic_settings, deps):
-    """Classic mode registers all 14 commands."""
+    """Classic mode registers all 17 commands."""
     orchestrator = MessageOrchestrator(classic_settings, deps)
     app = MagicMock()
     app.add_handler = MagicMock()
@@ -165,7 +165,9 @@ async def test_agentic_bot_commands(agentic_settings, deps):
 
     assert len(commands) == 9
     cmd_names = [c.command for c in commands]
-    assert cmd_names == ["start", "new", "status", "verbose", "repo", "restart", "addmodel", "models", "model"]
+    assert cmd_names == [
+        "start", "new", "status", "verbose", "repo", "restart", "addmodel", "models", "model"
+    ]
 
 
 async def test_classic_bot_commands(classic_settings, deps):
