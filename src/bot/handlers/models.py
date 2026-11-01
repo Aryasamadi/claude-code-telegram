@@ -111,6 +111,7 @@ async def add_model_provider(
         )
         settings = context.bot_data["settings"]
         selected = await service.select_model(selected_alias)
+        active_model = selected.model_id if selected else model_id
         # The requested model is the initial active model; other discovered
         # models remain available from /model and /models.
         status = "Provider registered and proxy is ready."
@@ -122,7 +123,7 @@ async def add_model_provider(
         await chat.send_message(
             f"✅ <b>{html.escape(provider_name)}</b> added.\n"
             f"Models found: <b>{count}</b>\n"
-            f"Active model: <code>{html.escape(selected.model_id if selected else model_id)}</code>"
+            f"Active model: <code>{html.escape(active_model)}</code>"
             "\n\n"
             f"{status}\nUse /model to switch models or /models to browse them.",
             parse_mode="HTML",
