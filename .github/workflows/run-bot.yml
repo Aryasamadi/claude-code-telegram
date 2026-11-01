@@ -87,7 +87,13 @@ jobs:
         run: |
           poetry check --lock
           poetry install --only main --no-interaction
-          poetry run pip install "litellm[proxy]==1.106.0"
+
+      - name: Install LiteLLM provider gateway
+        run: |
+          python -m venv .litellm-venv
+          .litellm-venv/bin/python -m pip install --upgrade pip
+          .litellm-venv/bin/python -m pip install "litellm[proxy]==1.106.0"
+          echo "LITELLM_EXECUTABLE=$GITHUB_WORKSPACE/.litellm-venv/bin/litellm" >> "$GITHUB_ENV"
 
       - name: Resolve and validate Telegram bot username
         shell: bash
