@@ -341,7 +341,7 @@ async def test_agentic_callback_scoped_to_cd_pattern(agentic_settings, deps):
         if isinstance(call[0][0], CallbackQueryHandler)
     ]
 
-    assert len(cb_handlers) == 3
+    assert len(cb_handlers) == 4
     # Find the cd: handler by pattern
     cd_handler = [h for h in cb_handlers if h.pattern and h.pattern.match("cd:x")]
     assert len(cd_handler) == 1
