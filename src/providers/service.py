@@ -31,6 +31,24 @@ LITELLM_BASE_URL = f"http://{LITELLM_HOST}:{LITELLM_PORT}"
 logger = logging.getLogger(__name__)
 
 
+def _safe_error_message(error: BaseException, secret: str = "") -> str:
+    """Return a bounded exception summary with credentials removed."""
+    message = str(error)
+    if secret:
+        message = message.replace(secret, "[REDACTED]")
+    message = re.sub(
+        r"(?i)(authorization\s*[:=]\s*bearer\s+)[^\s,;]+",
+        r"\1[REDACTED]",
+        message,
+    )
+    message = re.sub(
+        r"(?i)((?:api[_-]?key|token|secret)\s*[:=]\s*)[^\s,;]+",
+        r"\1[REDACTED]",
+        message,
+    )
+    return message[:1000]
+
+
 @dataclass(frozen=True)
 class ModelRoute:
     alias: str
@@ -136,9 +154,14 @@ class ProviderService:
             model_ids = await asyncio.to_thread(
                 self._fetch_model_ids, normalized_url, api_key
             )
-        except Exception:
+        except Exception as exc:
             model_ids = []
             catalog_available = False
+            logger.warning(
+                "Provider model catalog request failed; using the supplied model ID",
+                error_type=type(exc).__name__,
+                error=_safe_error_message(exc, api_key),
+            )
         if model_id not in model_ids:
             model_ids.insert(0, model_id)
         if not model_ids:
@@ -171,8 +194,30 @@ class ProviderService:
                 if item_id == model_id:
                     selected_alias = alias
             self._provider_keys[key_env] = api_key
-            await asyncio.to_thread(self._write_config)
-            await asyncio.to_thread(self._restart_proxy)
+            try:
+                await asyncio.to_thread(self._write_config)
+            except Exception as exc:
+                logger.error(
+                    "Provider registration failed",
+                    stage="write_config",
+                    provider_name=provider_name,
+                    model_id=model_id,
+                    error_type=type(exc).__name__,
+                    error=_safe_error_message(exc, api_key),
+                )
+                raise
+            try:
+                await asyncio.to_thread(self._restart_proxy)
+            except Exception as exc:
+                logger.error(
+                    "Provider registration failed",
+                    stage="proxy_startup",
+                    provider_name=provider_name,
+                    model_id=model_id,
+                    error_type=type(exc).__name__,
+                    error=_safe_error_message(exc, api_key),
+                )
+                raise
         return len(model_ids), catalog_available, selected_alias
 
     def _write_config(self) -> None:
@@ -209,6 +254,10 @@ class ProviderService:
         configured_executable = os.environ.get("LITELLM_EXECUTABLE")
         executable = configured_executable or shutil.which("litellm")
         if not executable or not Path(executable).is_file():
+            logger.error(
+                "LiteLLM executable is unavailable",
+                configured_executable=bool(configured_executable),
+            )
             raise RuntimeError(
                 "LiteLLM is missing. Install the LiteLLM proxy dependency."
             )
@@ -222,21 +271,29 @@ class ProviderService:
         if self._log_handle:
             self._log_handle.close()
         self._log_handle = self._log_path.open("a", encoding="utf-8")
-        self._process = subprocess.Popen(
-            [
-                executable,
-                "--config",
-                str(self._config_path),
-                "--host",
-                LITELLM_HOST,
-                "--port",
-                str(LITELLM_PORT),
-            ],
-            stdin=subprocess.DEVNULL,
-            stdout=self._log_handle,
-            stderr=subprocess.STDOUT,
-            env=os.environ.copy(),
-        )
+        try:
+            self._process = subprocess.Popen(
+                [
+                    executable,
+                    "--config",
+                    str(self._config_path),
+                    "--host",
+                    LITELLM_HOST,
+                    "--port",
+                    str(LITELLM_PORT),
+                ],
+                stdin=subprocess.DEVNULL,
+                stdout=self._log_handle,
+                stderr=subprocess.STDOUT,
+                env=os.environ.copy(),
+            )
+        except Exception as exc:
+            logger.error(
+                "Could not launch LiteLLM proxy",
+                error_type=type(exc).__name__,
+                error=_safe_error_message(exc),
+            )
+            raise
         for _ in range(45):
             if self._process.poll() is not None:
                 self._log_startup_failure()
