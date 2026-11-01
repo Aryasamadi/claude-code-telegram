@@ -79,13 +79,13 @@ async def add_model_provider(
     try:
         parts = shlex.split(raw_text)
     except ValueError:
-        await message.reply_text(
+        await update.effective_chat.send_message(
             "Invalid command quoting. Use four quoted values after /addmodel."
         )
         return
 
     if len(parts) != 5 or parts[0].split("@", 1)[0].lower() != "/addmodel":
-        await message.reply_text(
+        await update.effective_chat.send_message(
             'Usage:\n<code>/addmodel "Provider Name" "https://host/v1" "model-id" "API_KEY"</code>',
             parse_mode="HTML",
         )
@@ -93,11 +93,11 @@ async def add_model_provider(
 
     service = _service(context)
     if service is None:
-        await message.reply_text("Provider manager is not available.")
+        await update.effective_chat.send_message("Provider manager is not available.")
         return
 
     if not deleted:
-        await message.reply_text(
+        await update.effective_chat.send_message(
             "⚠️ I could not delete the command containing your API key. "
             "Please delete that message manually."
         )
@@ -125,7 +125,7 @@ async def add_model_provider(
                 "\nThe provider's /models endpoint was unavailable; "
                 "only the model from your command was added."
             )
-        await message.reply_text(
+        await update.effective_chat.send_message(
             f"✅ <b>{html.escape(provider_name)}</b> added.\n"
             f"Models found: <b>{count}</b>\n"
             f"Active model: <code>{html.escape(selected.model_id if selected else model_id)}</code>\n\n"
@@ -135,7 +135,7 @@ async def add_model_provider(
     except Exception as exc:
         # Errors are intentionally generic: provider URLs and API keys must not
         # leak back into Telegram messages or logs.
-        await message.reply_text(
+        await update.effective_chat.send_message(
             f"❌ Could not add this provider: {html.escape(str(exc))}",
             parse_mode="HTML",
         )
@@ -148,11 +148,11 @@ async def show_models(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         return
     service = _service(context)
     if service is None:
-        await message.reply_text("Provider manager is not available.")
+        await update.effective_chat.send_message("Provider manager is not available.")
         return
     models = await service.list_models()
     if not models:
-        await message.reply_text(
+        await update.effective_chat.send_message(
             'No providers added yet.\nAdd one with:\n'
             '<code>/addmodel "Provider Name" "https://host/v1" "model-id" "API_KEY"</code>',
             parse_mode="HTML",
@@ -160,7 +160,7 @@ async def show_models(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         return
     settings = context.bot_data["settings"]
     body, keyboard = _page_markup(models, 0, settings.claude_model)
-    await message.reply_text(body, parse_mode="HTML", reply_markup=keyboard)
+    await update.effective_chat.send_message(body, parse_mode="HTML", reply_markup=keyboard)
 
 
 async def model_picker_callback(
