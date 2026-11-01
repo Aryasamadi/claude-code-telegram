@@ -158,9 +158,10 @@ class ProviderService:
             model_ids = []
             catalog_available = False
             logger.warning(
-                "Provider model catalog request failed; using the supplied model ID",
-                error_type=type(exc).__name__,
-                error=_safe_error_message(exc, api_key),
+                "Provider model catalog request failed; using the supplied model ID "
+                "(error_type=%s, error=%s)",
+                type(exc).__name__,
+                _safe_error_message(exc, api_key),
             )
         if model_id not in model_ids:
             model_ids.insert(0, model_id)
@@ -198,24 +199,26 @@ class ProviderService:
                 await asyncio.to_thread(self._write_config)
             except Exception as exc:
                 logger.error(
-                    "Provider registration failed",
-                    stage="write_config",
-                    provider_name=provider_name,
-                    model_id=model_id,
-                    error_type=type(exc).__name__,
-                    error=_safe_error_message(exc, api_key),
+                    "Provider registration failed "
+                    "(stage=%s provider=%s model=%s error_type=%s error=%s)",
+                    "write_config",
+                    provider_name,
+                    model_id,
+                    type(exc).__name__,
+                    _safe_error_message(exc, api_key),
                 )
                 raise
             try:
                 await asyncio.to_thread(self._restart_proxy)
             except Exception as exc:
                 logger.error(
-                    "Provider registration failed",
-                    stage="proxy_startup",
-                    provider_name=provider_name,
-                    model_id=model_id,
-                    error_type=type(exc).__name__,
-                    error=_safe_error_message(exc, api_key),
+                    "Provider registration failed "
+                    "(stage=%s provider=%s model=%s error_type=%s error=%s)",
+                    "proxy_startup",
+                    provider_name,
+                    model_id,
+                    type(exc).__name__,
+                    _safe_error_message(exc, api_key),
                 )
                 raise
         return len(model_ids), catalog_available, selected_alias
@@ -255,8 +258,8 @@ class ProviderService:
         executable = configured_executable or shutil.which("litellm")
         if not executable or not Path(executable).is_file():
             logger.error(
-                "LiteLLM executable is unavailable",
-                configured_executable=bool(configured_executable),
+                "LiteLLM executable is unavailable (configured_executable=%s)",
+                bool(configured_executable),
             )
             raise RuntimeError(
                 "LiteLLM is missing. Install the LiteLLM proxy dependency."
@@ -289,9 +292,9 @@ class ProviderService:
             )
         except Exception as exc:
             logger.error(
-                "Could not launch LiteLLM proxy",
-                error_type=type(exc).__name__,
-                error=_safe_error_message(exc),
+                "Could not launch LiteLLM proxy (error_type=%s, error=%s)",
+                type(exc).__name__,
+                _safe_error_message(exc),
             )
             raise
         for _ in range(45):
