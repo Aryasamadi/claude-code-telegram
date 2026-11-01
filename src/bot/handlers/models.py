@@ -5,10 +5,13 @@ from __future__ import annotations
 import html
 import shlex
 
+import structlog
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from src.providers.service import ModelRoute, ProviderService
+
+logger = structlog.get_logger()
 
 PAGE_SIZE = 8
 
