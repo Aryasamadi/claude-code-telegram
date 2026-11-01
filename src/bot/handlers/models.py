@@ -111,8 +111,9 @@ async def add_model_provider(
     if not deleted:
         await chat.send_message(
             "⚠️ I could not delete the command containing your API key. "
-            "Please delete that message manually."
+            "Please delete that message manually, then send the command again."
         )
+        return
 
     _, provider_name, base_url, model_id, api_key = parts
     try:
@@ -137,12 +138,12 @@ async def add_model_provider(
             f"{status}\nUse /model to switch models or /models to browse them.",
             parse_mode="HTML",
         )
-    except Exception as exc:
-        # Errors are intentionally generic: provider URLs and API keys must not
-        # leak back into Telegram messages or logs.
+    except Exception:
+        # Do not echo upstream exceptions: some clients include sensitive
+        # request metadata or provider details in their exception messages.
         await chat.send_message(
-            f"❌ Could not add this provider: {html.escape(str(exc))}",
-            parse_mode="HTML",
+            "❌ Could not add this provider. Check the HTTPS base URL, API key, "
+            "model ID, and provider OpenAI-compatible API support."
         )
 
 
