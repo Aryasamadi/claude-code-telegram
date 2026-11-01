@@ -83,3 +83,38 @@ def test_registration_logging_does_not_mask_original_error(
     assert "error_type=RuntimeError" in caplog.text
     assert "[REDACTED]" in caplog.text
     assert "secret-api-key" not in caplog.text
+
+
+def test_litellm_config_uses_custom_openai_and_normalized_v1_base(tmp_path):
+    service = _service(tmp_path)
+    from src.providers.service import ModelRoute
+
+    service._models["test-alias"] = ModelRoute(
+        alias="test-alias",
+        provider_name="Example",
+        model_id="vendor/model",
+        base_url="https://api.example.com",
+        key_env="TG_PROVIDER_TEST_API_KEY",
+    )
+
+    service._write_config()
+    import json
+
+    payload = json.loads(service._config_path.read_text(encoding="utf-8"))
+    params = payload["model_list"][0]["litellm_params"]
+    assert params["model"] == "custom_openai/vendor/model"
+    assert params["api_base"] == "https://api.example.com/v1"
+
+
+def test_litellm_child_environment_excludes_bot_database_settings(monkeypatch):
+    from src.providers.service import ProviderService
+
+    monkeypatch.setenv("DATABASE_URL", "sqlite+aiosqlite:///./bot.db")
+    monkeypatch.setenv("LITELLM_DATABASE_URL", "sqlite+aiosqlite:///./bot.db")
+
+    env = ProviderService._proxy_child_environment()
+
+    assert "DATABASE_URL" not in env
+    assert "LITELLM_DATABASE_URL" not in env
+    assert env["PYTHON_DOTENV_DISABLED"] == "1"
+    assert env["LITELLM_LOCAL_MODEL_COST_MAP"] == "True"
