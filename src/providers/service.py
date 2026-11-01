@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import ipaddress
+import logging
 import json
 import os
 import re
@@ -27,6 +28,7 @@ from src.config.settings import Settings
 LITELLM_HOST = "127.0.0.1"
 LITELLM_PORT = 4000
 LITELLM_BASE_URL = f"http://{LITELLM_HOST}:{LITELLM_PORT}"
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -235,9 +237,9 @@ class ProviderService:
         )
         for _ in range(45):
             if self._process.poll() is not None:
+                self._log_startup_failure()
                 raise RuntimeError(
-                    "LiteLLM failed to start. Check the Actions log for the "
-                    "proxy startup error."
+                    f"LiteLLM exited during startup (code {self._process.returncode})."
                 )
             try:
                 request = urllib.request.Request(
@@ -247,7 +249,24 @@ class ProviderService:
                     return
             except Exception:
                 time.sleep(1)
+        self._log_startup_failure()
         raise RuntimeError("LiteLLM did not become healthy within 45 seconds.")
+
+    def _log_startup_failure(self) -> None:
+        """Copy a redacted proxy startup tail into the GitHub Actions log."""
+        try:
+            lines = self._log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+        except OSError:
+            logger.exception("Could not read LiteLLM startup log")
+            return
+
+        secret_values = [self._master_key, *self._provider_keys.values()]
+        for line in lines[-80:]:
+            safe_line = line
+            for secret in secret_values:
+                if secret:
+                    safe_line = safe_line.replace(secret, "[REDACTED]")
+            logger.error("LiteLLM startup: %s", safe_line[:2000])
 
     async def list_models(self) -> list[ModelRoute]:
         return sorted(
