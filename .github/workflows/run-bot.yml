@@ -34,7 +34,6 @@ jobs:
     steps:
       - name: Check required secrets
         shell: bash
-        env:
         run: |
           set -euo pipefail
 
