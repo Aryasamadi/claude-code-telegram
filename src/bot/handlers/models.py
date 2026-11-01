@@ -168,11 +168,7 @@ async def show_models(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         return
     settings = context.bot_data["settings"]
     body, keyboard = _page_markup(models, 0, settings.claude_model)
-    await chat.send_message(
-        body,
-        parse_mode="HTML",
-        reply_markup=keyboard,
-    )
+    await chat.send_message(body, parse_mode="HTML", reply_markup=keyboard)
 
 
 async def model_picker_callback(
@@ -215,6 +211,4 @@ async def model_picker_callback(
         await query.edit_message_text("No models are registered.")
         return
     body, keyboard = _page_markup(models, page, settings.claude_model)
-    await query.edit_message_text(
-        body, parse_mode="HTML", reply_markup=keyboard
-    )
+    await query.edit_message_text(body, parse_mode="HTML", reply_markup=keyboard)
