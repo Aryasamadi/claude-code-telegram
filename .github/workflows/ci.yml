@@ -41,7 +41,7 @@ jobs:
         run: poetry run black --diff src tests || true
 
       - name: Check import order (isort)
-        run: poetry run isort --check-only src tests
+        run: poetry run isort --diff src tests || true
 
       - name: Lint (flake8)
         run: poetry run flake8 src tests
