@@ -59,7 +59,8 @@ class ProviderService:
         self._log_path = data_dir / "litellm-proxy.log"
         self._master_key = "sk-" + secrets.token_urlsafe(36)
         os.environ["LITELLM_MASTER_KEY"] = self._master_key
-        os.environ["ANTHROPIC_API_KEY"] = self._master_key
+        os.environ.pop("ANTHROPIC_API_KEY", None)
+        os.environ["ANTHROPIC_AUTH_TOKEN"] = self._master_key
         os.environ["ANTHROPIC_BASE_URL"] = LITELLM_BASE_URL
 
     @staticmethod
@@ -279,4 +280,5 @@ class ProviderService:
             self._provider_keys.clear()
             os.environ.pop("LITELLM_MASTER_KEY", None)
             os.environ.pop("ANTHROPIC_API_KEY", None)
+            os.environ.pop("ANTHROPIC_AUTH_TOKEN", None)
             os.environ.pop("ANTHROPIC_BASE_URL", None)
