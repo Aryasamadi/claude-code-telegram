@@ -13,11 +13,8 @@ import os
 import re
 import secrets
 import shutil
-import socket
 import subprocess
-import sys
 import time
-import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
@@ -114,7 +111,7 @@ class ProviderService:
 
     async def add_provider(
         self, provider_name: str, base_url: str, model_id: str, api_key: str
-    ) -> tuple[int, bool]:
+    ) -> tuple[int, bool, str]:
         provider_name = provider_name.strip()
         model_id = model_id.strip()
         api_key = api_key.strip()
@@ -144,6 +141,7 @@ class ProviderService:
         os.environ[key_env] = api_key
 
         slug = self._slug(provider_name)
+        selected_alias = ""
         async with self._lock:
             added = 0
             for item_id in model_ids:
@@ -160,10 +158,12 @@ class ProviderService:
                         key_env=key_env,
                     )
                     added += 1
+                if item_id == model_id:
+                    selected_alias = alias
             self._provider_keys[key_env] = api_key
             await asyncio.to_thread(self._write_config)
             await asyncio.to_thread(self._restart_proxy)
-        return len(model_ids), catalog_available
+        return len(model_ids), catalog_available, selected_alias
 
     def _write_config(self) -> None:
         model_list = []
