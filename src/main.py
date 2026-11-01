@@ -25,6 +25,7 @@ from src.events.middleware import EventSecurityMiddleware
 from src.exceptions import ConfigurationError
 from src.notifications.service import NotificationService
 from src.projects import ProjectThreadManager, load_project_registry
+from src.providers.service import ProviderService
 from src.scheduler.scheduler import JobScheduler
 from src.security.audit import AuditLogger, InMemoryAuditStorage
 from src.security.auth import (
@@ -138,6 +139,10 @@ async def create_application(config: Settings) -> Dict[str, Any]:
         audit_storage = InMemoryAuditStorage()
         audit_logger = AuditLogger(audit_storage)
 
+        # Configure the on-demand LiteLLM bridge for Telegram-managed providers.
+        # Users supply their own provider credentials through /addmodel.
+        provider_service = ProviderService(config)
+
         # Create Claude integration components with persistent storage
         session_storage = SQLiteSessionStorage(storage.db_manager)
         session_manager = SessionManager(config, session_storage)
@@ -183,6 +188,7 @@ async def create_application(config: Settings) -> Dict[str, Any]:
             "event_bus": event_bus,
             "project_registry": None,
             "project_threads_manager": None,
+            "provider_service": provider_service,
         }
 
         bot = ClaudeCodeBot(config, dependencies)
@@ -203,6 +209,7 @@ async def create_application(config: Settings) -> Dict[str, Any]:
             "agent_handler": agent_handler,
             "auth_manager": auth_manager,
             "security_validator": security_validator,
+            "provider_service": provider_service,
         }
     except BaseException:
         # Storage has already started aiosqlite's connection pool, whose
@@ -225,6 +232,7 @@ async def run_application(app: Dict[str, Any]) -> None:
     config: Settings = app["config"]
     features: FeatureFlags = app["features"]
     event_bus: EventBus = app["event_bus"]
+    provider_service: ProviderService = app["provider_service"]
 
     notification_service: Optional[NotificationService] = None
     scheduler: Optional[JobScheduler] = None
@@ -371,6 +379,7 @@ async def run_application(app: Dict[str, Any]) -> None:
             await event_bus.stop()
             await bot.stop()
             await claude_integration.shutdown()
+            await provider_service.stop()
             await storage.close()
         except Exception as e:
             logger.error("Error during shutdown", error=str(e))
