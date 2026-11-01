@@ -202,8 +202,9 @@ class ProviderService:
         os.chmod(self._config_path, 0o600)
 
     def _restart_proxy(self) -> None:
-        executable = shutil.which("litellm")
-        if not executable:
+        configured_executable = os.environ.get("LITELLM_EXECUTABLE")
+        executable = configured_executable or shutil.which("litellm")
+        if not executable or not Path(executable).is_file():
             raise RuntimeError(
                 "LiteLLM is missing. Install the LiteLLM proxy dependency."
             )
