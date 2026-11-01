@@ -380,9 +380,13 @@ class ClaudeSDKManager:
         self.config = config
         self.security_validator = security_validator
 
-        # Set up environment for Claude Code SDK if API key is provided
-        # If no API key is provided, the SDK will use existing CLI authentication
-        if config.anthropic_api_key_str:
+        # A custom-provider gateway takes precedence over standalone Anthropic
+        # credentials. Claude Code authenticates to the local LiteLLM proxy using
+        # its gateway token; upstream provider keys stay inside LiteLLM.
+        if os.environ.get("ANTHROPIC_BASE_URL"):
+            os.environ.pop("ANTHROPIC_API_KEY", None)
+            logger.info("Using configured Anthropic-compatible provider gateway")
+        elif config.anthropic_api_key_str:
             os.environ["ANTHROPIC_API_KEY"] = config.anthropic_api_key_str
             logger.info("Using provided API key for Claude SDK authentication")
         else:
